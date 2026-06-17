@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'auth_app.apps.AuthAppConfig',
+    'flashcards_app.apps.FlashcardsAppConfig',
     'whitenoise.runserver_nostatic',
     'django_redis',
     'django_rq'
