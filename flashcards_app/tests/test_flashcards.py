@@ -16,8 +16,8 @@ class FlashcardModelTest(TestCase):
             email="profi@remind.de",
             password="safePassword123"
         )
-        self.cat_math = Category.objects.create(name="Mathe")
-        self.cat_physics = Category.objects.create(name="Physik")
+        self.cat_math = Category.objects.create(name="Math", user=self.test_user)
+        self.cat_physics = Category.objects.create(name="Physics", user=self.test_user)
 
     def test_create_flashcard_with_user_defaults_and_categories(self):
         card = Flashcard.objects.create(
@@ -54,7 +54,7 @@ class CategoryModelTest(TestCase):
             email="profi@remind.de",
             password="safePassword123"
         )
-        self.cat_math = Category.objects.create(name="Mathe")
+        self.cat_math = Category.objects.create(name="Math", user=self.test_user)
 
     def test_create_category(self):
         category = Category.objects.create(
