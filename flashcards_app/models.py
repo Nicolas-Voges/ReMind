@@ -6,8 +6,7 @@ class Category(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='categories',
-        null=True,
+        related_name='categories'
     )
     parent = models.ForeignKey(
         'self',
@@ -26,8 +25,7 @@ class Flashcard(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='flashcards',
-        null=True,
+        related_name='flashcards'
     )
     question = models.TextField()
     answer = models.TextField()
@@ -35,8 +33,8 @@ class Flashcard(models.Model):
     notes = models.TextField(blank=True)
     search_terms = models.JSONField(default=list, blank=True)
     shared = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    due_date = models.DateTimeField(auto_now_add=True, null=True)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateTimeField(auto_now_add=True)  
     categories = models.ManyToManyField(
         Category, 
         related_name='flashcards', 
