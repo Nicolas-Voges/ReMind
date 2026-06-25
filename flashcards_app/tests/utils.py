@@ -21,7 +21,7 @@ def get_card_kwargs():
     return {
         'question': "What is the capital of France?",
         'answer': "Paris",
-        'choices': None,
+        'choices': [],
         'search_terms': ["capital", "France", "city"],
         'notes': "Remember to check the spelling.",
         'card_type': CardType.SELF_ASSESSMENT.value
@@ -36,5 +36,5 @@ def get_card_dict(user=None, choices=None, **kwargs):
     if user is None:
         user = User.objects.create_user(**get_user_kwargs())
     if choices is not None:
-        return {**get_card_kwargs(), **kwargs, 'answer': None, 'choices': choices, "user": user}
+        return {**get_card_kwargs(), **kwargs, 'answer': "", 'choices': choices, "user": user}
     return {**get_card_kwargs(), **kwargs, "user": user}
