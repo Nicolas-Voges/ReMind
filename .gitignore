@@ -44,6 +44,8 @@ htmlcov/
 staticfiles/
 media/
 
-# Email files for development
+# Email files and notes for development
 sent_emails/*.log
 sent_emails/*.eml
+
+notes.py
