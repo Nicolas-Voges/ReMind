@@ -24,14 +24,14 @@ class ModelTest(TestCase):
         card.categories.add(self.cat_math, self.cat_physics)
 
         self.assertEqual(card.user, self.test_user)
-        self.assertEqual(card.question, default_specs["question"])
+        self.assertEqual(card.question, default_specs['question'])
         self.assertEqual(card.stage, 1)
         self.assertIsNotNone(card.created_at)
         self.assertIsNotNone(card.due_date)
         self.assertFalse(card.shared)
-        self.assertEqual(card.search_terms, default_specs["search_terms"])
-        self.assertEqual(card.choices, default_specs["choices"])
-        self.assertEqual(card.notes, default_specs["notes"])
+        self.assertEqual(card.search_terms, default_specs['search_terms'])
+        self.assertEqual(card.choices, default_specs['choices'])
+        self.assertEqual(card.notes, default_specs['notes'])
         self.assertEqual(card.categories.count(), 2)
         self.assertIn(self.cat_math, card.categories.all())
         self.assertIn(self.cat_physics, card.categories.all())
@@ -42,7 +42,7 @@ class ModelTest(TestCase):
 class PostTest(APITestCase):
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
-        self.create_url = reverse("flashcard-list")
+        self.create_url = reverse('flashcard-list')
         self.credentials_creator = get_user_dict()
 
     def test_success(self):
@@ -50,7 +50,7 @@ class PostTest(APITestCase):
         self.client.force_authenticate(user=self.user_creator)
 
         response = self.client.post(
-            self.create_url, data=get_card_dict(), format="json"
+            self.create_url, data=get_card_dict(), format='json'
         )
 
         self.assertEqual(response.status_code, 201)
@@ -58,11 +58,11 @@ class PostTest(APITestCase):
 
         new_card = Flashcard.objects.first()
         self.assertEqual(new_card.user, self.user_creator)
-        self.assertEqual(new_card.question, default_specs["question"])
+        self.assertEqual(new_card.question, default_specs['question'])
 
     def test_fail(self):
         invalid_payload = get_card_dict()
-        del invalid_payload["question"]
+        del invalid_payload['question']
         cases = [
             (get_card_dict(), False, status.HTTP_401_UNAUTHORIZED),
             (invalid_payload, True, status.HTTP_400_BAD_REQUEST),
@@ -73,6 +73,6 @@ class PostTest(APITestCase):
             if login:
                 self.client.force_authenticate(user=self.user_creator)
 
-            response = self.client.post(self.create_url, data=data, format="json")
+            response = self.client.post(self.create_url, data=data, format='json')
             self.assertEqual(response.status_code, status_code)
             self.assertEqual(Flashcard.objects.count(), 0)

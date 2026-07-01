@@ -8,7 +8,7 @@ class Category(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories"
     )
     parent = models.ForeignKey(
-        "self",
+        'self',
         on_delete=models.CASCADE,
         related_name="subcategories",
         blank=True,
