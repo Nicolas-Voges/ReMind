@@ -1,5 +1,5 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 
 from flashcards_app.models import Category
 
@@ -11,17 +11,13 @@ class ModelTest(TestCase):
 
     def setUp(self):
         self.test_user = User.objects.create_user(
-            username="LernProfi",
-            email="profi@remind.de",
-            password="safePassword123"
+            username="LernProfi", email="profi@remind.de", password="safePassword123"
         )
         self.cat_math = Category.objects.create(name="Math", user=self.test_user)
 
     def test_create_category(self):
         category = Category.objects.create(
-            user=self.test_user,
-            name=self.TEST_NAME,
-            parent=self.cat_math
+            user=self.test_user, name=self.TEST_NAME, parent=self.cat_math
         )
 
         self.assertEqual(category.user, self.test_user)
