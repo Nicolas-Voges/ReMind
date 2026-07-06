@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from flashcards_app.models import Category, Flashcard
+from flashcards_app.models import CardType, Category, Flashcard
 
 from .utils import get_card_dict, get_card_kwargs, get_user_dict
 
@@ -53,7 +53,7 @@ class PostTest(APITestCase):
             self.create_url, data=get_card_dict(), format='json'
         )
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Flashcard.objects.count(), 1)
 
         new_card = Flashcard.objects.first()
@@ -76,3 +76,83 @@ class PostTest(APITestCase):
             response = self.client.post(self.create_url, data=data, format='json')
             self.assertEqual(response.status_code, status_code)
             self.assertEqual(Flashcard.objects.count(), 0)
+
+
+class PatchTest(APITestCase):
+    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    PATCH_PAYLOAD = {'question': "Test patch question"}
+    PATCH_PAYLOAD_WRONG_CHOICE_VALUE = {
+        'choices': [['text', True], ['textt', False], ['WRONG']],
+        'card_type': CardType.MULTIPLE_CHOICE.value,
+    }
+    PATCH_PAYLOAD_WRONG_INCOMPATINLE_FIELDS = {
+        'choices': [['text', True], ['textt', False]],
+        'card_type': CardType.TEXT_INPUT.value,
+    }
+    PATCH_PAYLOAD_WRONG_EMPTY_QUESTION = {'question': ""}
+
+    def setUp(self):
+        self.user_creator = User.objects.create_user(**get_user_dict())
+        self.credentials_creator = get_user_dict()
+        self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
+        self.credentials_other = self.OTHER_USER_DICT
+        self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
+        self.patch_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+
+    def test_success(self):
+        self.client.force_authenticate(user=self.user_creator)
+
+        response = self.client.patch(
+            self.patch_url,
+            data=self.PATCH_PAYLOAD,
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.card.refresh_from_db()
+        self.assertEqual(self.card.question, self.PATCH_PAYLOAD['question'])
+
+    def test_fail(self):
+        cases = [
+            (
+                None,
+                self.PATCH_PAYLOAD,
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot patch",
+            ),
+            (
+                self.user_creator,
+                self.PATCH_PAYLOAD_WRONG_CHOICE_VALUE,
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid choice values must return 400",
+            ),
+            (
+                self.user_creator,
+                self.PATCH_PAYLOAD_WRONG_EMPTY_QUESTION,
+                status.HTTP_400_BAD_REQUEST,
+                "Empty question must return 400",
+            ),
+            (
+                self.user_creator,
+                self.PATCH_PAYLOAD_WRONG_INCOMPATINLE_FIELDS,
+                status.HTTP_400_BAD_REQUEST,
+                "Incompatible fields for card type must return 400",
+            ),
+            (
+                self.user_other,
+                self.PATCH_PAYLOAD,
+                status.HTTP_404_NOT_FOUND,
+                "Other user gets 404 for foreign card",
+            ),
+        ]
+
+        for user, payload, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+
+            response = self.client.patch(
+                self.patch_url,
+                payload,
+                format='json',
+            )
+
+            self.assertEqual(response.status_code, status_code, msg)
