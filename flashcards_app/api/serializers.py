@@ -32,10 +32,16 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
             'due_date',
         ]
 
+    def _get_field(self, field_name, data):
+        value = data.get(field_name)
+        if value is None and self.instance is not None:
+            return getattr(self.instance, field_name, None)
+        return value
+
     def validate(self, data):
-        card_type = data.get('card_type')
-        choices = data.get('choices')
-        answer = data.get('answer')
+        card_type = self._get_field('card_type', data)
+        choices = self._get_field('choices', data)
+        answer = self._get_field('answer', data)
 
         if card_type == 'multiple_choice':
             if not choices or len(choices) < 2:
