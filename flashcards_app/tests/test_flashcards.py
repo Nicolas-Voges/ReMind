@@ -80,13 +80,16 @@ class PostTest(APITestCase):
 
 class PatchTest(APITestCase):
     OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
-    PATCH_PAYLOAD = {'question': "Test patch question"}
+    PATCH_PAYLOAD = {
+        'choices': [['text', True], ['textt', False]],
+        'card_type': CardType.MULTIPLE_CHOICE.value,
+    }
     PATCH_PAYLOAD_WRONG_CHOICE_VALUE = {
         'choices': [['text', True], ['textt', False], ['WRONG']],
         'card_type': CardType.MULTIPLE_CHOICE.value,
     }
-    PATCH_PAYLOAD_WRONG_INCOMPATINLE_FIELDS = {
-        'choices': [['text', True], ['textt', False]],
+    PATCH_PAYLOAD_WRONG_INCOMPATIBLE_FIELDS = {
+        'answer': '',
         'card_type': CardType.TEXT_INPUT.value,
     }
     PATCH_PAYLOAD_WRONG_EMPTY_QUESTION = {'question': ""}
@@ -110,7 +113,7 @@ class PatchTest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.card.refresh_from_db()
-        self.assertEqual(self.card.question, self.PATCH_PAYLOAD['question'])
+        self.assertEqual(self.card.choices, self.PATCH_PAYLOAD['choices'])
 
     def test_fail(self):
         cases = [
@@ -134,7 +137,7 @@ class PatchTest(APITestCase):
             ),
             (
                 self.user_creator,
-                self.PATCH_PAYLOAD_WRONG_INCOMPATINLE_FIELDS,
+                self.PATCH_PAYLOAD_WRONG_INCOMPATIBLE_FIELDS,
                 status.HTTP_400_BAD_REQUEST,
                 "Incompatible fields for card type must return 400",
             ),
@@ -156,3 +159,52 @@ class PatchTest(APITestCase):
             )
 
             self.assertEqual(response.status_code, status_code, msg)
+
+
+class DeleteTest(APITestCase):
+    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+
+    def setUp(self):
+        self.user_creator = User.objects.create(**get_user_dict())
+        self.user_other = User.objects.create(**self.OTHER_USER_DICT)
+        self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
+        self.delete_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+        self.delete_url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
+
+    def test_success(self):
+        self.client.force_authenticate(user=self.user_creator)
+
+        response = self.client.delete(self.delete_url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Flashcard.objects.count(), 0)
+
+    def test_fail(self):
+        cases = [
+            (
+                None,
+                self.delete_url,
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot delete",
+            ),
+            (
+                self.user_creator,
+                self.delete_url_wrong,
+                status.HTTP_404_NOT_FOUND,
+                "A flashcard that does not exist cannot be deleted",
+            ),
+            (
+                self.user_other,
+                self.delete_url,
+                status.HTTP_404_NOT_FOUND,
+                "Only creator can delete their own flashcard",
+            ),
+        ]
+
+        for user, url, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+
+            response = self.client.delete(url)
+
+            self.assertEqual(response.status_code, status_code, msg)
+            self.assertEqual(Flashcard.objects.count(), 1)
