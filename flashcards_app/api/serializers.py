@@ -32,6 +32,25 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
             'due_date',
         ]
 
+    def validate_choices(self, value):
+        if not value:
+            return value
+
+        for item in value:
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                raise serializers.ValidationError(
+                    "Each choice must be a pair of [text, is_correct]."
+                )
+
+            answer, is_correct = item
+
+            if not isinstance(answer, str) or not isinstance(is_correct, bool):
+                raise serializers.ValidationError(
+                    "Wrong format of choices. First must be string, second must be boolean."
+                )
+
+        return value
+
     def _get_field(self, field_name, data):
         value = data.get(field_name)
         if value is None and self.instance is not None:
