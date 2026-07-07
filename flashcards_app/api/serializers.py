@@ -67,14 +67,12 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'choices': "At least 2 options are required."}
                 )
+            data['answer'] = ''
         else:
-            if choices:
-                raise serializers.ValidationError(
-                    {'choices': "Flashcards of this type must not contain any options."}
-                )
             if not answer or answer.strip() == "":
                 raise serializers.ValidationError(
                     {'answer': "An answer is required for this type."}
                 )
+            data['choices'] = []
 
         return data
