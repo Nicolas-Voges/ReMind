@@ -208,3 +208,48 @@ class DeleteTest(APITestCase):
 
             self.assertEqual(response.status_code, status_code, msg)
             self.assertEqual(Flashcard.objects.count(), 1)
+
+
+class GetDetailTest(APITestCase):
+    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+
+    def setUp(self):
+        self.user_creator = User.objects.create_user(**get_user_dict())
+        self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
+        self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
+        self.detail_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+        self.detail_url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
+
+    def test_success(self):
+        self.client.force_authenticate(user=self.user_creator)
+        response = self.client.get(self.detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.card.id)
+
+    def test_fail(self):
+        cases = [
+            (
+                None,
+                self.detail_url,
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot get detail view",
+            ),
+            (
+                self.user_creator,
+                self.detail_url_wrong,
+                status.HTTP_404_NOT_FOUND,
+                "Getting a non-existent card must return 404",
+            ),
+            (
+                self.user_other,
+                self.detail_url,
+                status.HTTP_404_NOT_FOUND,
+                "Other user must get 404 for a foreign card due to queryset filtering",
+            ),
+        ]
+
+        for user, url, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status_code, msg)
