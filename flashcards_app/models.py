@@ -14,7 +14,6 @@ class Category(models.Model):
         blank=True,
         null=True,
     )
-    shared = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -39,7 +38,6 @@ class Flashcard(models.Model):
     stage = models.IntegerField(default=1)
     notes = models.TextField(blank=True)
     search_terms = models.JSONField(default=list, blank=True)
-    shared = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField(Category, related_name="flashcards", blank=True)

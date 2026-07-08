@@ -24,4 +24,3 @@ class ModelTest(TestCase):
         self.assertEqual(category.name, self.TEST_NAME)
         self.assertEqual(str(category), self.TEST_NAME)
         self.assertEqual(category.parent, self.cat_math)
-        self.assertFalse(category.shared)

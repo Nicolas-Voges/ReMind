@@ -28,7 +28,6 @@ class ModelTest(TestCase):
         self.assertEqual(card.stage, 1)
         self.assertIsNotNone(card.created_at)
         self.assertIsNotNone(card.due_date)
-        self.assertFalse(card.shared)
         self.assertEqual(card.search_terms, default_specs['search_terms'])
         self.assertEqual(card.choices, default_specs['choices'])
         self.assertEqual(card.notes, default_specs['notes'])

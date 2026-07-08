@@ -19,7 +19,6 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
             'stage',
             'notes',
             'search_terms',
-            'shared',
             'created_at',
             'due_date',
             'categories',
