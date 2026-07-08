@@ -253,3 +253,52 @@ class GetDetailTest(APITestCase):
             self.client.force_authenticate(user=user)
             response = self.client.get(url)
             self.assertEqual(response.status_code, status_code, msg)
+
+
+class GetListTest(APITestCase):
+    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+
+    def setUp(self):
+        self.user_creator = User.objects.create_user(**get_user_dict())
+        self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
+        self.list_url = reverse('flashcard-list') + '?size=15'
+
+        for i in range(15):
+            card_data = get_card_dict(user=self.user_creator)
+            card_data['question'] = f"Question {i}"
+            Flashcard.objects.create(**card_data)
+
+    def test_success_and_pagination(self):
+        cases = [
+            (self.user_creator, status.HTTP_200_OK, 15, "Creator sees all 15 cards"),
+            (self.user_other, status.HTTP_200_OK, 0, "Other user sees empty list"),
+        ]
+
+        for user, status_code, expected_count, msg in cases:
+            self.client.force_authenticate(user=user)
+
+            response = self.client.get(self.list_url)
+
+            self.assertEqual(response.status_code, status_code, msg)
+
+            if isinstance(response.data, dict) and 'count' in response.data:
+                self.assertEqual(response.data['count'], expected_count, msg)
+                self.assertEqual(
+                    len(response.data['results']), min(expected_count, 15), msg
+                )
+            else:
+                self.assertEqual(len(response.data), expected_count, msg)
+
+    def test_fail(self):
+        cases = [
+            (
+                None,
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot get list view",
+            ),
+        ]
+
+        for user, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+            response = self.client.get(self.list_url)
+            self.assertEqual(response.status_code, status_code, msg)
