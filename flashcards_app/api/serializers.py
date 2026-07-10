@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from flashcards_app.models import Flashcard
+from flashcards_app.models import Category, Flashcard
 
 User = get_user_model()
 
@@ -73,5 +73,50 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
                     {'answer': "An answer is required for this type."}
                 )
             data['choices'] = []
+
+        return data
+
+
+class CategoryModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = [
+            'id',
+            'name',
+            'user',
+            'parent',
+        ]
+        read_only_fields = [
+            'id',
+            'user',
+        ]
+
+    def validate(self, data):
+        instance = self.instance
+        parent = data.get('parent')
+        request_user = self.context['request'].user
+
+        if parent and parent.user != request_user:
+            raise serializers.ValidationError(
+                {
+                    "parent": "You can only select your own categories as parent categories."
+                }
+            )
+
+        if instance and parent:
+            if parent == instance:
+                raise serializers.ValidationError(
+                    {"parent": "A Category cannot be its own parent."}
+                )
+
+            current_parent = parent
+            while current_parent is not None:
+                if current_parent == instance:
+                    raise serializers.ValidationError(
+                        {
+                            "parent": f"Circular referenze detected: Category '{parent.name}' is already a child category from '{instance.name}'."
+                        }
+                    )
+                current_parent = current_parent.parent
 
         return data
