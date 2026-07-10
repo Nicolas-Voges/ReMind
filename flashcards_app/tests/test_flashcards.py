@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from flashcards_app.models import CardType, Category, Flashcard
 
-from .utils import get_card_dict, get_card_kwargs, get_user_dict
+from .utils import get_card_dict, get_user_dict
 
 User = get_user_model()
 
@@ -18,7 +18,7 @@ class ModelTest(TestCase):
         self.cat_physics = Category.objects.create(name="Physics", user=self.test_user)
 
     def test_create_flashcard(self):
-        default_specs = get_card_kwargs()
+        default_specs = get_card_dict()
         card = Flashcard.objects.create(**get_card_dict(user=self.test_user))
 
         card.categories.add(self.cat_math, self.cat_physics)
