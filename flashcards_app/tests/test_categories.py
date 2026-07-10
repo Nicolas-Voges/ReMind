@@ -38,17 +38,14 @@ class PostTest(APITestCase):
 
     def test_success(self):
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(
-            self.create_url, get_category_dict(user=self.user), format='json'
-        )
-
+        response = self.client.post(self.create_url, get_category_dict(), format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response['user'], self.user.pk)
-        self.assertEqual(response['parent'], None)
+        self.assertEqual(response.data['user'], self.user.pk)
+        self.assertEqual(response.data['parent'], None)
         self.assertEqual(Category.objects.count(), 1)
 
     def test_fails(self):
-        cases = {
+        cases = [
             (
                 None,
                 get_category_dict(),
@@ -57,11 +54,11 @@ class PostTest(APITestCase):
             ),
             (
                 self.user,
-                get_category_dict(self.user, name=""),
-                status.HTTP_401_UNAUTHORIZED,
+                get_category_dict(name=""),
+                status.HTTP_400_BAD_REQUEST,
                 "Category name cannot be empty.",
             ),
-        }
+        ]
 
         for user, data, status_code, msg in cases:
             self.client.force_authenticate(user=user)
