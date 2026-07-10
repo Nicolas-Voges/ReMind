@@ -1,7 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from flashcards_app.models import Category
+
+from .utils import get_category_dict, get_user_dict
 
 User = get_user_model()
 
@@ -24,3 +29,44 @@ class ModelTest(TestCase):
         self.assertEqual(category.name, self.TEST_NAME)
         self.assertEqual(str(category), self.TEST_NAME)
         self.assertEqual(category.parent, self.cat_math)
+
+
+class PostTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create(**get_user_dict())
+        self.create_url = reverse('category-list')
+
+    def test_success(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            self.create_url, get_category_dict(user=self.user), format='json'
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response['user'], self.user.pk)
+        self.assertEqual(response['parent'], None)
+        self.assertEqual(Category.objects.count(), 1)
+
+    def test_fails(self):
+        cases = {
+            (
+                None,
+                get_category_dict(),
+                status.HTTP_401_UNAUTHORIZED,
+                "Unauthorized user cannot post a category.",
+            ),
+            (
+                self.user,
+                get_category_dict(self.user, name=""),
+                status.HTTP_401_UNAUTHORIZED,
+                "Category name cannot be empty.",
+            ),
+        }
+
+        for user, data, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+
+            response = self.client.post(self.create_url, data, format='json')
+
+            self.assertEqual(response.status_code, status_code, msg)
+            self.assertEqual(Category.objects.count(), 0)

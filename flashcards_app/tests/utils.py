@@ -36,3 +36,11 @@ def get_card_dict(user=None, choices=None, **kwargs):
         result['choices'] = list(result['choices'])
 
     return result
+
+
+def get_category_dict(**kwargs):
+    DEFAULTS = {
+        'name': "TestCategory",
+        'parent': None,
+    }
+    return {**DEFAULTS, **kwargs}
