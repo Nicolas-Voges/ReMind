@@ -81,9 +81,6 @@ class PatchTest(APITestCase):
         self.category_parent = Category.objects.create(
             **get_category_dict(name="ParentCat", user=self.user_creator)
         )
-        self.category_other_user = Category.objects.create(
-            **get_category_dict(user=self.user_other, name='OtherUsersCategory')
-        )
         self.url = reverse('category-detail', kwargs={'pk': self.category.pk})
 
     def test_success(self):
@@ -94,7 +91,7 @@ class PatchTest(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Category.objects.count(), 3)
+        self.assertEqual(Category.objects.count(), 2)
 
     def test_fails(self):
         cases = [
@@ -114,7 +111,7 @@ class PatchTest(APITestCase):
                 self.user_other,
                 {'name': "Not mine"},
                 status.HTTP_404_NOT_FOUND,
-                "A Category cannot be its own parent. A 404 error should be returned.",
+                "Only the creator can edit a category. A 404 error should be returned.",
             ),
         ]
 
@@ -124,3 +121,51 @@ class PatchTest(APITestCase):
             response = self.client.patch(self.url, data, format='json')
 
             self.assertEqual(response.status_code, status_code, msg)
+
+
+class DeleteTest(APITestCase):
+    def setUp(self):
+        self.user_creator = User.objects.create(**get_user_dict())
+        self.user_other = User.objects.create(
+            **get_user_dict(username="Other", email="other@user.com")
+        )
+        self.category = Category.objects.create(user=self.user_creator)
+        self.url = reverse('category-detail', kwargs={'pk': self.category.pk})
+        self.url_wrong = reverse('category-detail', kwargs={'pk': 99999})
+
+    def test_success(self):
+        self.client.force_authenticate(self.user_creator)
+
+        response = self.client.delete(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Category.objects.count(), 0)
+
+    def test_fails(self):
+        cases = [
+            (
+                None,
+                self.url,
+                status.HTTP_401_UNAUTHORIZED,
+                "An annonymous user cannot delete a category! A 401 error should be returned.",
+            ),
+            (
+                self.user_creator,
+                self.url_wrong,
+                status.HTTP_404_NOT_FOUND,
+                "Only the creator can delete his category. A 404 error should be returned.",
+            ),
+            (
+                self.user_other,
+                self.url,
+                status.HTTP_404_NOT_FOUND,
+                "Only the creator can delete his category. A 404 error should be returned.",
+            ),
+        ]
+
+        for user, url, status_code, msg in cases:
+            self.client.force_authenticate(user)
+
+            response = self.client.delete(url)
+
+            self.assertEqual(response.status_code, status_code)
