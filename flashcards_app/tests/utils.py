@@ -14,7 +14,7 @@ def get_user_dict(**kwargs):
     return {**DEFAULTS, **kwargs}
 
 
-def get_card_dict(user=None, choices=None, **kwargs):
+def get_card_dict(choices=None, **kwargs):
     """
     Returns a dictionary representing a flashcard with default values.
     Allows overriding of default values via kwargs.
@@ -27,7 +27,7 @@ def get_card_dict(user=None, choices=None, **kwargs):
         'notes': "Remember to check the spelling.",
         'card_type': CardType.SELF_ASSESSMENT.value,
     }
-    result = {**DEFAULTS, 'user': user, **kwargs}
+    result = {**DEFAULTS, **kwargs}
 
     if choices is not None:
         result['answer'] = ""

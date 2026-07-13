@@ -41,16 +41,14 @@ class ModelTest(TestCase):
 class PostTest(APITestCase):
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
-        self.create_url = reverse('flashcard-list')
+        self.url = reverse('flashcard-list')
         self.credentials_creator = get_user_dict()
 
     def test_success(self):
         default_specs = get_card_dict()
         self.client.force_authenticate(user=self.user_creator)
 
-        response = self.client.post(
-            self.create_url, data=get_card_dict(), format='json'
-        )
+        response = self.client.post(self.url, data=get_card_dict(), format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Flashcard.objects.count(), 1)
@@ -72,7 +70,7 @@ class PostTest(APITestCase):
             if login:
                 self.client.force_authenticate(user=self.user_creator)
 
-            response = self.client.post(self.create_url, data=data, format='json')
+            response = self.client.post(self.url, data=data, format='json')
             self.assertEqual(response.status_code, status_code)
             self.assertEqual(Flashcard.objects.count(), 0)
 
@@ -99,13 +97,13 @@ class PatchTest(APITestCase):
         self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
         self.credentials_other = self.OTHER_USER_DICT
         self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
-        self.patch_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+        self.url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
 
     def test_success(self):
         self.client.force_authenticate(user=self.user_creator)
 
         response = self.client.patch(
-            self.patch_url,
+            self.url,
             data=self.PATCH_PAYLOAD,
             format='json',
         )
@@ -152,7 +150,7 @@ class PatchTest(APITestCase):
             self.client.force_authenticate(user=user)
 
             response = self.client.patch(
-                self.patch_url,
+                self.url,
                 payload,
                 format='json',
             )
@@ -167,13 +165,13 @@ class DeleteTest(APITestCase):
         self.user_creator = User.objects.create(**get_user_dict())
         self.user_other = User.objects.create(**self.OTHER_USER_DICT)
         self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
-        self.delete_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
-        self.delete_url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
+        self.url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+        self.url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
 
     def test_success(self):
         self.client.force_authenticate(user=self.user_creator)
 
-        response = self.client.delete(self.delete_url)
+        response = self.client.delete(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Flashcard.objects.count(), 0)
@@ -182,19 +180,19 @@ class DeleteTest(APITestCase):
         cases = [
             (
                 None,
-                self.delete_url,
+                self.url,
                 status.HTTP_401_UNAUTHORIZED,
                 "Anonymous user cannot delete",
             ),
             (
                 self.user_creator,
-                self.delete_url_wrong,
+                self.url_wrong,
                 status.HTTP_404_NOT_FOUND,
                 "A flashcard that does not exist cannot be deleted",
             ),
             (
                 self.user_other,
-                self.delete_url,
+                self.url,
                 status.HTTP_404_NOT_FOUND,
                 "Only creator can delete their own flashcard",
             ),
@@ -216,12 +214,12 @@ class GetDetailTest(APITestCase):
         self.user_creator = User.objects.create_user(**get_user_dict())
         self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
         self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
-        self.detail_url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
-        self.detail_url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
+        self.url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
+        self.url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
 
     def test_success(self):
         self.client.force_authenticate(user=self.user_creator)
-        response = self.client.get(self.detail_url)
+        response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.card.id)
@@ -230,19 +228,19 @@ class GetDetailTest(APITestCase):
         cases = [
             (
                 None,
-                self.detail_url,
+                self.url,
                 status.HTTP_401_UNAUTHORIZED,
                 "Anonymous user cannot get detail view",
             ),
             (
                 self.user_creator,
-                self.detail_url_wrong,
+                self.url_wrong,
                 status.HTTP_404_NOT_FOUND,
                 "Getting a non-existent card must return 404",
             ),
             (
                 self.user_other,
-                self.detail_url,
+                self.url,
                 status.HTTP_404_NOT_FOUND,
                 "Other user must get 404 for a foreign card due to queryset filtering",
             ),
@@ -260,7 +258,7 @@ class GetListTest(APITestCase):
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
         self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
-        self.list_url = reverse('flashcard-list') + '?size=15'
+        self.url = reverse('flashcard-list') + '?size=15'
 
         for i in range(15):
             card_data = get_card_dict(user=self.user_creator)
@@ -276,7 +274,7 @@ class GetListTest(APITestCase):
         for user, status_code, expected_count, msg in cases:
             self.client.force_authenticate(user=user)
 
-            response = self.client.get(self.list_url)
+            response = self.client.get(self.url)
 
             self.assertEqual(response.status_code, status_code, msg)
 
@@ -299,5 +297,5 @@ class GetListTest(APITestCase):
 
         for user, status_code, msg in cases:
             self.client.force_authenticate(user=user)
-            response = self.client.get(self.list_url)
+            response = self.client.get(self.url)
             self.assertEqual(response.status_code, status_code, msg)
