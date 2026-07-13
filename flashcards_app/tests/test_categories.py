@@ -153,7 +153,7 @@ class DeleteTest(APITestCase):
                 self.user_creator,
                 self.url_wrong,
                 status.HTTP_404_NOT_FOUND,
-                "Only the creator can delete his category. A 404 error should be returned.",
+                "Cannot delete a not existing category. A 404 error should be returned.",
             ),
             (
                 self.user_other,
@@ -169,3 +169,57 @@ class DeleteTest(APITestCase):
             response = self.client.delete(url)
 
             self.assertEqual(response.status_code, status_code)
+
+
+class GetDetailTest(APITestCase):
+    def setUp(self):
+        self.user_creator = User.objects.create(**get_user_dict())
+        self.user_other = User.objects.create(
+            **get_user_dict(username="Other", email="other@user.com")
+        )
+        self.expected_fields = set(
+            get_category_dict(user=self.user_creator, id=10).keys()
+        )
+        self.category = Category.objects.create(user=self.user_creator)
+        self.url = reverse('category-detail', kwargs={'pk': self.category.pk})
+        self.url_wrong = reverse('category-detail', kwargs={'pk': 99999})
+
+    def test_success(self):
+        self.client.force_authenticate(self.user_creator)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data['name'], Category.objects.get(pk=self.category.pk).name
+        )
+        self.assertEqual(set(response.data.keys()), self.expected_fields)
+
+    def test_fails(self):
+        cases = [
+            (
+                None,
+                self.url,
+                status.HTTP_401_UNAUTHORIZED,
+                "An annonymous user cannot delete a category! A 401 error should be returned.",
+            ),
+            (
+                self.user_creator,
+                self.url_wrong,
+                status.HTTP_404_NOT_FOUND,
+                "Cannot get a not existing category. A 404 error should be returned.",
+            ),
+            (
+                self.user_other,
+                self.url,
+                status.HTTP_404_NOT_FOUND,
+                "Only the creator can get his category. A 404 error should be returned.",
+            ),
+        ]
+
+        for user, url, status_code, msg in cases:
+            self.client.force_authenticate(user)
+
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, status_code, msg)
