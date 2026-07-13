@@ -223,3 +223,52 @@ class GetDetailTest(APITestCase):
             response = self.client.get(url)
 
             self.assertEqual(response.status_code, status_code, msg)
+
+
+class GetListTest(APITestCase):
+    def setUp(self):
+        self.user_creator = User.objects.create(**get_user_dict())
+        self.user_other = User.objects.create(
+            **get_user_dict(username="Other", email="other@user.com")
+        )
+        self.url = reverse('category-list') + '?size=15'
+
+        for i in range(15):
+            category_data = get_category_dict(user=self.user_creator)
+            category_data['name'] = f"Name {i}"
+            Category.objects.create(**category_data)
+
+    def test_success(self):
+        cases = [
+            (self.user_creator, 15, "Creator sees all 15 cards"),
+            (self.user_other, 0, "Other user sees empty list"),
+        ]
+
+        for user, expected_count, msg in cases:
+            self.client.force_authenticate(user)
+
+            response = self.client.get(self.url)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            if isinstance(response.data, dict) and 'count' in response.data:
+                self.assertEqual(response.data['count'], expected_count, msg)
+                self.assertEqual(
+                    len(response.data['results']), min(expected_count, 15), msg
+                )
+            else:
+                self.assertEqual(len(response.data), expected_count, msg)
+
+    def test_fails(self):
+        cases = [
+            (
+                None,
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot get list view",
+            ),
+        ]
+
+        for user, status_code, msg in cases:
+            self.client.force_authenticate(user=user)
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, status_code, msg)

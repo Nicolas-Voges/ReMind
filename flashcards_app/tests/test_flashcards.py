@@ -267,16 +267,16 @@ class GetListTest(APITestCase):
 
     def test_success_and_pagination(self):
         cases = [
-            (self.user_creator, status.HTTP_200_OK, 15, "Creator sees all 15 cards"),
-            (self.user_other, status.HTTP_200_OK, 0, "Other user sees empty list"),
+            (self.user_creator, 15, "Creator sees all 15 cards"),
+            (self.user_other, 0, "Other user sees empty list"),
         ]
 
-        for user, status_code, expected_count, msg in cases:
+        for user, expected_count, msg in cases:
             self.client.force_authenticate(user=user)
 
             response = self.client.get(self.url)
 
-            self.assertEqual(response.status_code, status_code, msg)
+            self.assertEqual(response.status_code, status.HTTP_200_OK, msg)
 
             if isinstance(response.data, dict) and 'count' in response.data:
                 self.assertEqual(response.data['count'], expected_count, msg)
