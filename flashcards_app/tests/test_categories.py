@@ -78,6 +78,9 @@ class PatchTest(APITestCase):
         self.category = Category.objects.create(
             **get_category_dict(user=self.user_creator)
         )
+        self.category_child = Category.objects.create(
+            **get_category_dict(user=self.user_creator, parent=self.category)
+        )
         self.category_parent = Category.objects.create(
             **get_category_dict(name="ParentCat", user=self.user_creator)
         )
@@ -91,7 +94,7 @@ class PatchTest(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Category.objects.count(), 2)
+        self.assertEqual(Category.objects.count(), 3)
 
     def test_fails(self):
         cases = [
@@ -112,6 +115,12 @@ class PatchTest(APITestCase):
                 {'name': "Not mine"},
                 status.HTTP_404_NOT_FOUND,
                 "Only the creator can edit a category. A 404 error should be returned.",
+            ),
+            (
+                self.user_creator,
+                {'parent': self.category_child.pk},
+                status.HTTP_400_BAD_REQUEST,
+                "Deep circular reference was not blocked by the validator. A 400 error should be returned.",
             ),
         ]
 
