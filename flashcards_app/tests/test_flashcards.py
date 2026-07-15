@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 
 from flashcards_app.models import CardType, Category, Flashcard
 
-from .utils import get_card_dict, get_user_dict
+from .utils import get_card_dict, get_category_dict, get_user_dict
 
 User = get_user_model()
 
@@ -299,3 +299,88 @@ class GetListTest(APITestCase):
             self.client.force_authenticate(user=user)
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, status_code, msg)
+
+
+class BulkPatchTest(APITestCase):
+    def setUp(self):
+        self.user_creator = User.objects.create(**get_user_dict())
+        self.user_other = User.objects.create(
+            **get_user_dict(username="other", email="other@user.com")
+        )
+        self.category = Category.objects.create(
+            **get_category_dict(name="MyCat", user=self.user_creator)
+        )
+        self.category_other = Category.objects.create(
+            **get_category_dict(name="OtherCat", user=self.user_other)
+        )
+        self.card1 = Flashcard.objects.create(
+            user=self.user_creator, question="Q1", card_type="self_assessment"
+        )
+        self.card2 = Flashcard.objects.create(
+            user=self.user_creator, question="Q2", card_type="self_assessment"
+        )
+        self.card_other = Flashcard.objects.create(
+            user=self.user_other, question="Q3", card_type="self_assessment"
+        )
+        self.url = reverse('flashcard-bulk-assign-category')
+
+    def test_success(self):
+        self.client.force_authenticate(self.user_creator)
+
+        data = {
+            "category_id": self.category.pk,
+            "card_ids": [self.card1.pk, self.card2.pk],
+        }
+        response = self.client.patch(self.url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        updated_cards = Flashcard.objects.filter(id__in=[self.card1.pk, self.card2.pk])
+        for card in updated_cards:
+            self.assertTrue(card.categories.filter(id=self.category.pk).exists())
+
+    def test_fails(self):
+        cases = [
+            (
+                None,
+                {"category_id": self.category.pk, "card_ids": [self.card1.pk]},
+                status.HTTP_401_UNAUTHORIZED,
+                "Anonymous user cannot bulk assign categories.",
+            ),
+            (
+                self.user_creator,
+                {"category_id": "", "card_ids": []},
+                status.HTTP_400_BAD_REQUEST,
+                "Missing fields should return 400 Bad Request.",
+            ),
+            (
+                self.user_creator,
+                {"category_id": self.category_other.pk, "card_ids": [self.card1.pk]},
+                status.HTTP_404_NOT_FOUND,
+                "Using another user's category should return 404.",
+            ),
+            (
+                self.user_creator,
+                {"category_id": self.category.pk, "card_ids": [self.card_other.pk]},
+                status.HTTP_400_BAD_REQUEST,
+                "User should not be able to modify cards of another user.",
+            ),
+        ]
+
+        for user, data, status_code, msg in cases:
+            self.client.force_authenticate(user)
+
+            response = self.client.patch(self.url, data, format='json')
+
+            self.assertEqual(response.status_code, status_code, msg)
+
+            card_ids = data.get("card_ids", [])
+            category_id = data.get("category_id")
+
+            if category_id and card_ids:
+                actual_count = Flashcard.objects.filter(
+                    id__in=card_ids, categories__id=category_id
+                ).count()
+                self.assertEqual(
+                    actual_count, 0, f"DB Check failed: Data was modified! ({msg})"
+                )
