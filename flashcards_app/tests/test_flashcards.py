@@ -31,6 +31,8 @@ class ModelTest(TestCase):
         self.assertEqual(card.search_terms, default_specs['search_terms'])
         self.assertEqual(card.choices, default_specs['choices'])
         self.assertEqual(card.notes, default_specs['notes'])
+        self.assertEqual(card.last_interval_ms, 86_400_000)
+        self.assertEqual(card.history, [])
         self.assertEqual(card.categories.count(), 2)
         self.assertIn(self.cat_math, card.categories.all())
         self.assertIn(self.cat_physics, card.categories.all())
