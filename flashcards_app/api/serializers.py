@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 
 from flashcards_app.models import Category, Flashcard
 
@@ -119,4 +120,33 @@ class CategoryModelSerializer(serializers.ModelSerializer):
                     )
                 current_parent = current_parent.parent
 
+        return data
+
+
+class BulkAssignCategorySerializer(serializers.Serializer):
+    category_id = serializers.IntegerField()
+    card_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=False
+    )
+
+    def validate(self, data):
+        request_user = self.context['request'].user
+        category_id = data['category_id']
+        card_ids = data['card_ids']
+
+        try:
+            category = Category.objects.get(id=category_id, user=request_user)
+        except Category.DoesNotExist:
+            raise NotFound("Category not found.")
+
+        unique_card_ids = list(set(card_ids))
+        cards = Flashcard.objects.filter(id__in=unique_card_ids, user=request_user)
+
+        if cards.count() != len(unique_card_ids):
+            raise serializers.ValidationError(
+                {"card_ids": "One or more card IDs are invalid or access is denied."}
+            )
+
+        data['category_obj'] = category
+        data['cards_queryset'] = cards
         return data
