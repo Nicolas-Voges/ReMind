@@ -38,7 +38,9 @@ class Flashcard(models.Model):
     stage = models.IntegerField(default=1)
     notes = models.TextField(blank=True)
     search_terms = models.JSONField(default=list, blank=True)
+    history = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    last_interval_ms = models.BigIntegerField(default=86_400_000)
     due_date = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField(Category, related_name="flashcards", blank=True)
 

@@ -23,6 +23,8 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
             'created_at',
             'due_date',
             'categories',
+            'last_interval_ms',
+            'history',
         ]
         read_only_fields = [
             'id',
@@ -30,6 +32,8 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
             'stage',
             'created_at',
             'due_date',
+            'last_interval_ms',
+            'history',
         ]
 
     def validate_choices(self, value):
