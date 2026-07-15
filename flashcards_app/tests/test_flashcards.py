@@ -209,6 +209,22 @@ class DeleteTest(APITestCase):
 
 class GetDetailTest(APITestCase):
     OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    EXPECTED_FIELDS = {
+        'id',
+        'user',
+        'question',
+        'answer',
+        'choices',
+        'card_type',
+        'stage',
+        'notes',
+        'search_terms',
+        'created_at',
+        'due_date',
+        'categories',
+        'last_interval_ms',
+        'history',
+    }
 
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
@@ -223,6 +239,7 @@ class GetDetailTest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.card.id)
+        self.assertEqual(set(response.data.keys()), self.EXPECTED_FIELDS)
 
     def test_fail(self):
         cases = [
