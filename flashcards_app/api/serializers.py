@@ -1,3 +1,10 @@
+"""
+Serializers for the flashcards API.
+
+This module provides data validation and serialization for flashcard
+instances, category trees, and bulk operation payloads.
+"""
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
@@ -8,6 +15,13 @@ User = get_user_model()
 
 
 class FlashCardModelSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Flashcard objects.
+
+    Includes field-level and object-level validation to enforce structures
+    based on whether the card is a standard type or multiple-choice.
+    """
+
     class Meta:
         model = Flashcard
         fields = [
@@ -37,6 +51,13 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
         ]
 
     def validate_choices(self, value):
+        """
+        Validate the choices field format.
+
+        Ensures each entry is an iterable pair containing a string
+        and a boolean flag indicating if it is correct.
+        """
+
         if not value:
             return value
 
@@ -56,12 +77,26 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
         return value
 
     def _get_field(self, field_name, data):
+        """
+        Helper method to retrieve fields during partial updates.
+
+        Returns the value from incoming data, or falls back to the instance
+        value if the data dictionary does not provide it.
+        """
+
         value = data.get(field_name)
         if value is None and self.instance is not None:
             return getattr(self.instance, field_name, None)
         return value
 
     def validate(self, data):
+        """
+        Object-level validation for flashcard data.
+
+        Enforces mandatory answer texts for standard types and requires
+        at least two available choices for multiple-choice formats.
+        """
+
         card_type = self._get_field('card_type', data)
         choices = self._get_field('choices', data)
         answer = self._get_field('answer', data)
@@ -83,6 +118,13 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
 
 
 class CategoryModelSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Category objects.
+
+    Implements cross-user validation and deep-nested recursive checks
+    to prevent infinite hierarchy loops within category assignments.
+    """
+
     class Meta:
         model = Category
         fields = [
@@ -97,6 +139,13 @@ class CategoryModelSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        """
+        Validate hierarchy constraints for the parent category.
+
+        Guarantees that a user only uses their own nodes and scans up
+        the existing ancestral tree to rule out circular references.
+        """
+
         instance = self.instance
         parent = data.get('parent')
         request_user = self.context['request'].user
@@ -128,12 +177,25 @@ class CategoryModelSerializer(serializers.ModelSerializer):
 
 
 class BulkAssignCategorySerializer(serializers.Serializer):
+    """
+    Non-model serializer to parse bulk category assignment requests.
+
+    Verifies IDs and fetches fully evaluated QuerySets for secure processing.
+    """
+
     category_id = serializers.IntegerField()
     card_ids = serializers.ListField(
         child=serializers.IntegerField(), allow_empty=False
     )
 
     def validate(self, data):
+        """
+        Validate bulk payload entities against the active request user.
+
+        Verifies ownership of the destination category and ensures that every
+        submitted flashcard ID exists and belongs to the active account.
+        """
+
         request_user = self.context['request'].user
         category_id = data['category_id']
         card_ids = data['card_ids']

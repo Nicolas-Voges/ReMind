@@ -1,8 +1,22 @@
+"""
+Database models for the flashcards application.
+
+Defines the structure for categories (including hierarchical trees)
+and flashcards with varying study formats and scheduling metadata.
+"""
+
 from django.conf import settings
 from django.db import models
 
 
 class Category(models.Model):
+    """
+    Represents a user-defined category for grouping flashcards.
+
+    Supports a hierarchical structure via a self-referential foreign key
+    to allow multi-level subcategories.
+    """
+
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="categories"
@@ -20,12 +34,21 @@ class Category(models.Model):
 
 
 class CardType(models.TextChoices):
+    """Available study formats for flashcards."""
+
     SELF_ASSESSMENT = "self_assessment", "Self assessment"
     MULTIPLE_CHOICE = "multiple_choice", "Multiple choice"
     TEXT_INPUT = "text_input", "Text input"
 
 
 class Flashcard(models.Model):
+    """
+    Represents an individual flashcard item owned by a user.
+
+    Stores content fields, format configuration, and tracking parameters
+    required for spaced repetition algorithms.
+    """
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="flashcards"
     )
