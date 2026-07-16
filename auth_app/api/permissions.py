@@ -1,5 +1,6 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+
 class CookieJWTAuthentication(JWTAuthentication):
     """JWT authentication that falls back to an access token stored in cookies.
 
