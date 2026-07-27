@@ -1,10 +1,11 @@
+# ruff: noqa: RUF012
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from flashcards_app.models import CardType, Category, Flashcard
+from flashcards_app.models import CardType, Category, DifficultyRating, Flashcard
 
 from .utils import get_card_dict, get_category_dict, get_user_dict
 
@@ -25,26 +26,30 @@ class ModelTest(TestCase):
 
         self.assertEqual(card.user, self.test_user)
         self.assertEqual(card.question, default_specs['question'])
-        self.assertEqual(card.stage, 1)
         self.assertIsNotNone(card.created_at)
         self.assertIsNotNone(card.due_date)
         self.assertEqual(card.search_terms, default_specs['search_terms'])
         self.assertEqual(card.choices, default_specs['choices'])
         self.assertEqual(card.notes, default_specs['notes'])
-        self.assertEqual(card.last_interval_ms, 86_400_000)
-        self.assertEqual(card.history, [])
+        self.assertEqual(card.last_interval_ms, 0)
+        self.assertEqual(card.difficulty, DifficultyRating.MEDIUM)
         self.assertEqual(card.categories.count(), 2)
         self.assertIn(self.cat_math, card.categories.all())
         self.assertIn(self.cat_physics, card.categories.all())
 
         self.assertIn(card, self.cat_math.flashcards.all())
 
+        def test_model_indexes_exist(self):
+            index_fields = [idx.fields for idx in Flashcard._meta.indexes]
+            self.assertIn(['user', 'due_date'], index_fields)
+            self.assertIn(['user', '-created_at'], index_fields)
+            self.assertIn(['user', 'last_interval_ms'], index_fields)
+
 
 class PostTest(APITestCase):
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
         self.url = reverse('flashcard-list')
-        self.credentials_creator = get_user_dict()
 
     def test_success(self):
         default_specs = get_card_dict()
@@ -78,7 +83,7 @@ class PostTest(APITestCase):
 
 
 class PatchTest(APITestCase):
-    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    OTHER_USER_DICT = get_user_dict(username="other", email="other@user.de")
     PATCH_PAYLOAD = {
         'choices': [['text', True], ['textt', False]],
         'card_type': CardType.MULTIPLE_CHOICE.value,
@@ -95,9 +100,7 @@ class PatchTest(APITestCase):
 
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
-        self.credentials_creator = get_user_dict()
         self.user_other = User.objects.create_user(**self.OTHER_USER_DICT)
-        self.credentials_other = self.OTHER_USER_DICT
         self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
         self.url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
 
@@ -113,6 +116,7 @@ class PatchTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.card.refresh_from_db()
         self.assertEqual(self.card.choices, self.PATCH_PAYLOAD['choices'])
+        self.assertEqual(self.card.difficulty, DifficultyRating.MEDIUM)
 
     def test_fail(self):
         cases = [
@@ -161,7 +165,7 @@ class PatchTest(APITestCase):
 
 
 class DeleteTest(APITestCase):
-    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    OTHER_USER_DICT = get_user_dict(username="other", email="other@user.de")
 
     def setUp(self):
         self.user_creator = User.objects.create(**get_user_dict())
@@ -210,7 +214,7 @@ class DeleteTest(APITestCase):
 
 
 class GetDetailTest(APITestCase):
-    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    OTHER_USER_DICT = get_user_dict(username="other", email="other@user.de")
     EXPECTED_FIELDS = {
         'id',
         'user',
@@ -218,14 +222,13 @@ class GetDetailTest(APITestCase):
         'answer',
         'choices',
         'card_type',
-        'stage',
         'notes',
         'search_terms',
         'created_at',
         'due_date',
         'categories',
         'last_interval_ms',
-        'history',
+        'difficulty',
     }
 
     def setUp(self):
@@ -272,7 +275,7 @@ class GetDetailTest(APITestCase):
 
 
 class GetListTest(APITestCase):
-    OTHER_USER_DICT = get_user_dict(**{'username': "other", 'email': "other@user.de"})
+    OTHER_USER_DICT = get_user_dict(username="other", email="other@user.de")
 
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
