@@ -36,7 +36,7 @@ class FlashCardModelViewSet(viewsets.ModelViewSet):
 
     serializer_class = FlashCardModelSerializer
     pagination_class = DefaultPagination
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user = self.request.user
@@ -79,7 +79,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
 
     serializer_class = CategoryModelSerializer
     pagination_class = DefaultPagination
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         user = self.request.user

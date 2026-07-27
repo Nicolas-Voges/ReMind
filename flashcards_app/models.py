@@ -33,6 +33,14 @@ class Category(models.Model):
         return self.name
 
 
+class DifficultyRating(models.TextChoices):
+    VERY_HARD = "very_hard", "Very hard"
+    HARD = "hard", "Hard"
+    MEDIUM = "medium", "Medium"
+    EASY = "easy", "Easy"
+    VERY_EASY = "very_easy", "Very easy"
+
+
 class CardType(models.TextChoices):
     """Available study formats for flashcards."""
 
@@ -58,14 +66,24 @@ class Flashcard(models.Model):
     card_type = models.CharField(
         max_length=20, choices=CardType.choices, default=CardType.SELF_ASSESSMENT
     )
-    stage = models.IntegerField(default=1)
     notes = models.TextField(blank=True)
     search_terms = models.JSONField(default=list, blank=True)
-    history = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    last_interval_ms = models.BigIntegerField(default=86_400_000)
+    last_interval_ms = models.BigIntegerField(default=0)
     due_date = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField(Category, related_name="flashcards", blank=True)
+    difficulty = models.CharField(
+        max_length=10, choices=DifficultyRating.choices, default=DifficultyRating.MEDIUM
+    )
+
+    class Meta:
+        ordering = ("-created_at",)
+
+        indexes = (
+            models.Index(fields=('user', 'due_date')),
+            models.Index(fields=('user', '-created_at')),
+            models.Index(fields=('user', 'last_interval_ms')),
+        )
 
     def __str__(self):
         return f"{self.question[:20]}..."

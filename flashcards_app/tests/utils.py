@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-from flashcards_app.models import CardType
+from flashcards_app.models import CardType, DifficultyRating
 
 User = get_user_model()
 
@@ -26,6 +26,7 @@ def get_card_dict(choices=None, **kwargs):
         'search_terms': ["capital", "France", "city"],
         'notes': "Remember to check the spelling.",
         'card_type': CardType.SELF_ASSESSMENT.value,
+        'difficulty': DifficultyRating.MEDIUM.value,
     }
     result = {**DEFAULTS, **kwargs}
 

@@ -24,31 +24,28 @@ class FlashCardModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Flashcard
-        fields = [
+        fields = (
             'id',
             'user',
             'question',
             'answer',
             'choices',
             'card_type',
-            'stage',
             'notes',
             'search_terms',
             'created_at',
             'due_date',
             'categories',
             'last_interval_ms',
-            'history',
-        ]
-        read_only_fields = [
+            'difficulty',
+        )
+        read_only_fields = (
             'id',
             'user',
-            'stage',
             'created_at',
             'due_date',
             'last_interval_ms',
-            'history',
-        ]
+        )
 
     def validate_choices(self, value):
         """
@@ -127,16 +124,16 @@ class CategoryModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = [
+        fields = (
             'id',
             'name',
             'user',
             'parent',
-        ]
-        read_only_fields = [
+        )
+        read_only_fields = (
             'id',
             'user',
-        ]
+        )
 
     def validate(self, data):
         """
