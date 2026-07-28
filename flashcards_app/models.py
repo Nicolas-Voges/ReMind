@@ -29,6 +29,9 @@ class Category(models.Model):
         null=True,
     )
 
+    class Meta:
+        indexes = (models.Index(fields=("user", "parent")),)
+
     def __str__(self):
         return self.name
 
