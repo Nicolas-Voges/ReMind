@@ -2,6 +2,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -39,11 +40,11 @@ class ModelTest(TestCase):
 
         self.assertIn(card, self.cat_math.flashcards.all())
 
-        def test_model_indexes_exist(self):
-            index_fields = [idx.fields for idx in Flashcard._meta.indexes]
-            self.assertIn(['user', 'due_date'], index_fields)
-            self.assertIn(['user', '-created_at'], index_fields)
-            self.assertIn(['user', 'last_interval_ms'], index_fields)
+    def test_model_indexes_exist(self):
+        index_fields = [idx.fields for idx in Flashcard._meta.indexes]
+        self.assertIn(['user', 'due_date'], index_fields)
+        self.assertIn(['user', '-created_at'], index_fields)
+        self.assertIn(['user', 'last_interval_ms'], index_fields)
 
 
 class PostTest(APITestCase):
@@ -215,21 +216,6 @@ class DeleteTest(APITestCase):
 
 class GetDetailTest(APITestCase):
     OTHER_USER_DICT = get_user_dict(username="other", email="other@user.de")
-    EXPECTED_FIELDS = {
-        'id',
-        'user',
-        'question',
-        'answer',
-        'choices',
-        'card_type',
-        'notes',
-        'search_terms',
-        'created_at',
-        'due_date',
-        'categories',
-        'last_interval_ms',
-        'difficulty',
-    }
 
     def setUp(self):
         self.user_creator = User.objects.create_user(**get_user_dict())
@@ -237,6 +223,14 @@ class GetDetailTest(APITestCase):
         self.card = Flashcard.objects.create(**get_card_dict(user=self.user_creator))
         self.url = reverse('flashcard-detail', kwargs={'pk': self.card.pk})
         self.url_wrong = reverse('flashcard-detail', kwargs={'pk': 99999})
+        self.EXPECTED_FIELDS = get_card_dict(
+            id=10,
+            user=self.user_creator.pk,
+            categories=None,
+            last_interval_ms=0,
+            created_at=timezone.now(),
+            due_date=timezone.now(),
+        )
 
     def test_success(self):
         self.client.force_authenticate(user=self.user_creator)
@@ -244,7 +238,7 @@ class GetDetailTest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.card.id)
-        self.assertEqual(set(response.data.keys()), self.EXPECTED_FIELDS)
+        self.assertEqual(set(response.data.keys()), set(self.EXPECTED_FIELDS))
 
     def test_fail(self):
         cases = [

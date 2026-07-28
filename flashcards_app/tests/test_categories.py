@@ -30,6 +30,10 @@ class ModelTest(TestCase):
         self.assertEqual(str(category), self.TEST_NAME)
         self.assertEqual(category.parent, self.cat_math)
 
+    def test_model_indexes_exist(self):
+        index_fields = [idx.fields for idx in Category._meta.indexes]
+        self.assertIn(['user', 'parent'], index_fields)
+
 
 class PostTest(APITestCase):
     def setUp(self):
