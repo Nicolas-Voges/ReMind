@@ -6,9 +6,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from core.utils_test import get_card_dict, get_category_dict, get_user_dict
 from flashcards_app.models import CardType, Category, DifficultyRating, Flashcard
-
-from .utils import get_card_dict, get_category_dict, get_user_dict
 
 User = get_user_model()
 

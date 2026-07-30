@@ -4,9 +4,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from core.utils_test import get_category_dict, get_user_dict
 from flashcards_app.models import Category
-
-from .utils import get_category_dict, get_user_dict
 
 User = get_user_model()
 
