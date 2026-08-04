@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "auth_app.apps.AuthAppConfig",
     "flashcards_app.apps.FlashcardsAppConfig",
+    "learn_app.apps.LearnAppConfig",
     "whitenoise.runserver_nostatic",
     "django_redis",
     "django_rq",
